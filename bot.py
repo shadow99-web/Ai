@@ -34,41 +34,78 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 @bot.event
 async def on_ready():
     print(f"--------------------------------------------------")
-    print(f"✅ Official Application Online: {bot.user.name}")
+    print(f"✅ BULLETPROOF NAMING BOT ONLINE: {bot.user.name}")
     print(f"--------------------------------------------------")
 
 @bot.event
 async def on_message(message):
-    # 1. Ignore messages sent by your own bot to prevent processing loops
+    # 1. Ignore messages sent by your own bot to avoid loops
     if message.author.id == bot.user.id:
         return
 
-    # 2. Check if the message contains any embeds
+    img_url = None
+    is_spawn = False
+
+    # 2. Text-Based Detection (Scans main message text)
+    msg_content = message.content.lower() if message.content else ""
+    if "wild pokémon has appeared" in msg_content or "guess the pokémon" in msg_content:
+        is_spawn = True
+
+    # 3. Deep Embed Scanning (Scans titles, descriptions, and author fields)
     if message.embeds:
         for embed in message.embeds:
-            img_url = embed.image.url if embed.image else None
+            embed_title = embed.title.lower() if embed.title else ""
+            embed_desc = embed.description.lower() if embed.description else ""
+            author_name = embed.author.name.lower() if (embed.author and embed.author.name) else ""
             
-            # 3. CRITICAL: Check if the image belongs to Pokétwo's asset server
-            # This triggers the AI no matter who or what sent/forwarded the embed!
-            if img_url and "cdn.poketwo.net/images/" in img_url:
-                print(f"🎯 Valid Pokétwo asset signature matched: {img_url}")
-                print(f"📡 Querying Hugging Face Space...")
-                
-                async with aiohttp.ClientSession() as session:
-                    payload = {"imageUrl": img_url}
-                    try:
-                        async with session.post(API_PREDICT_URL, json=payload, timeout=5.0) as resp:
-                            if resp.status == 200:
-                                data = await resp.json()
-                                if data.get("status") is True:
-                                    final_output = data["name"].capitalize()
-                                    
-                                    # 4. Post the target prediction right into the active channel
-                                    await message.channel.send(f"📊 **AI Identification:** That looks like a **{final_output}**")
-                                    print(f"✅ Prediction delivered: {final_output}")
-                                    return # Stop looping through embeds once handled
-                    except Exception as e:
-                        print(f"🛑 Error connecting to Space: {e}")
+            if (
+                "wild pokémon has appeared" in embed_title or 
+                "wild pokémon has appeared" in embed_desc or
+                "wild pokémon has appeared" in author_name or
+                "guess the pokémon" in embed_desc
+            ) or (embed.description and "#" in embed.description and "catch" in embed_desc):
+                is_spawn = True
+
+            # Extract image from Embed Image section
+            if embed.image and embed.image.url:
+                img_url = embed.image.url
+            # Fallback: Extract image from Embed Thumbnail section
+            elif embed.thumbnail and embed.thumbnail.url:
+                img_url = embed.thumbnail.url
+
+    # 4. Attachment Scanning (Fallback if it's sent as a raw uploaded file)
+    if not img_url and message.attachments:
+        for attachment in message.attachments:
+            if any(attachment.filename.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.webp']):
+                img_url = attachment.url
+                # If a helper bot uploads a wild image, treat it as a spawn target
+                if "pokemon" in attachment.filename.lower():
+                    is_spawn = True
+
+    # 5. Overriding Check: If it's a direct URL from Poketwo's asset server, it's ALWAYS a spawn
+    if img_url and "cdn.poketwo.net/images/" in img_url:
+        is_spawn = True
+
+    # 6. Fire the Prediction Execution Loop
+    if is_spawn and img_url:
+        print(f"🎯 Valid Spawn Match Confirmed! Processing URL: {img_url}")
+        
+        async with aiohttp.ClientSession() as session:
+            payload = {"imageUrl": img_url}
+            try:
+                async with session.post(API_PREDICT_URL, json=payload, timeout=5.0) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        if data.get("status") is True:
+                            final_output = data["name"].capitalize()
+                            
+                            # Deliver the prediction string instantly into the channel
+                            await message.channel.send(f"📊 **AI Identification:** That looks like a **{final_output}**")
+                            print(f"✅ Automatically delivered: {final_output}")
+                    else:
+                        print(f"⚠️ Hugging Face returned error status code: {resp.status}")
+            except Exception as e:
+                print(f"🛑 Failed to reach AI pipeline: {e}")
 
     # Process manually typed utility commands (like !test)
     await bot.process_commands(message)
