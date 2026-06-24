@@ -42,6 +42,8 @@ async def on_message(message):
     # 1. Ignore messages sent by your own bot to avoid loops
     if message.author.id == bot.user.id:
         return
+    if message.author.id != 716390085896962058:
+        return
 
     img_url = None
     is_spawn = False
@@ -135,9 +137,36 @@ async def test_api(ctx, url: str = None):
                         embed.set_thumbnail(url=url)
                         await ctx.send(embed=embed)
                     else:
-                        await ctx.send(f"⚠️ **Model Error:** `{data.get('error')}`")
+                        await ctx.send(f" **Model Error:** `{data.get('error')}`")
         except Exception as e:
-            await ctx.send(f"🛑 **Network Failure:** `{e}`")
+            await ctx.send(f" **Network Failure:** `{e}`")
+            
+@bot.command()
+async def ping(ctx):
+    # 1. Gateway / WebSocket Latency (built into the library)
+    gateway_ping = round(bot.latency * 1000)
+    
+    # 2. API / REST Latency
+    start_time = time.perf_counter()
+    # Trigger a minor API action (typing status) to see how fast Discord responds
+    async with ctx.typing():
+        end_time = time.perf_counter()
+    api_ping = round((end_time - start_time) * 1000)
+    
+    # 3. Client / Round-trip Latency
+    # Measure how long it takes to send the message and get it back
+    start_msg = time.perf_counter()
+    message = await ctx.send("🏓 Pinging...")
+    end_msg = time.perf_counter()
+    client_ping = round((end_msg - start_msg) * 1000)
+    
+    # Edit the message to show all three latency types
+    embed = discord.Embed(title=" **Pong!**", color=discord.Color.blue())
+    embed.add_field(name=" **Gateway Latency**", value=f"`{gateway_ping}ms`", inline=False)
+    embed.add_field(name=" **API Latency**", value=f"`{api_ping}ms`", inline=False)
+    embed.add_field(name=" **Client Latency**", value=f"`{client_ping}ms`", inline=False)
+    
+    await message.edit(content=None, embed=embed)
 
 if __name__ == "__main__":
     if not BOT_TOKEN:
