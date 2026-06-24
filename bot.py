@@ -29,7 +29,7 @@ API_PREDICT_URL = "https://discordbotnhihun-naming.hf.space/predict"
 
 intents = discord.Intents.default()
 intents.message_content = True  
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="~", intents=intents)
 
 @bot.event
 async def on_ready():
@@ -100,7 +100,7 @@ async def on_message(message):
                             final_output = data["name"].capitalize()
                             
                             # Deliver the prediction string instantly into the channel
-                            await message.channel.send(f" ** NAME:** {final_output}")
+                            await message.channel.send(f" ** <a:24445pokemonball:1519264691795394651> Name:** {final_output}")
                             print(f"✅ Automatically delivered: {final_output}")
                     else:
                         print(f"⚠️ Hugging Face returned error status code: {resp.status}")
