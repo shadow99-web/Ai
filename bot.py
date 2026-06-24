@@ -26,7 +26,7 @@ def keep_alive():
 # --- ⚙️ DISCORD APPLICATION CONFIGURATION ---
 BOT_TOKEN = os.getenv("OFFICIAL_BOT_TOKEN")
 API_PREDICT_URL = "https://discordbotnhihun-naming.hf.space/predict"
-
+DEVELOPER_IDS = [1483484788181569758, 1378954077462986772, 876746134352183336]
 intents = discord.Intents.default()
 intents.message_content = True  
 bot = commands.Bot(command_prefix="~", intents=intents)
@@ -42,7 +42,7 @@ async def on_message(message):
     # 1. Ignore messages sent by your own bot to avoid loops
     if message.author.id == bot.user.id:
         return
-    if message.author.id != 716390085896962058:
+    if message.author.id != 716390085896962058 and message.author.id not in DEVELOPER_IDS:
         return
 
     img_url = None
