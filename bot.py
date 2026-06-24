@@ -102,7 +102,7 @@ async def on_message(message):
                             final_output = data["name"].capitalize()
                             
                             # Deliver the prediction string instantly into the channel
-                            await message.channel.send(f" ** <a:24445pokemonball:1519264691795394651> Name:** {final_output}")
+                            await message.channel.send(f"<a:24445pokemonball:1519264691795394651> Name: **{final_output}** ")
                             print(f"✅ Automatically delivered: {final_output}")
                     else:
                         print(f"⚠️ Hugging Face returned error status code: {resp.status}")
